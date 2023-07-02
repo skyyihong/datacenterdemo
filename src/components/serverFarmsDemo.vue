@@ -1,10 +1,11 @@
 <template>
   <div>
-    <div id="container" @mousemove="mouseMove">
+    <div id="container" @mousemove="mouseMove" ref="container">
       <div
         id="plane"
         :style="{ left: state.planePos.left, top: state.planePos.top, display: state.planeDisplay }"
       >
+        <h4>数据为实时随机生成</h4>
         <p>机柜名称：{{ state.curCabinet.name }}</p>
         <p>机柜温度：{{ state.curCabinet.temperature }}°</p>
         <p>使用情况：{{ state.curCabinet.count }} / {{ state.curCabinet.capacity }}</p>
@@ -17,11 +18,14 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js'
+import { randInt } from 'three/src/math/MathUtils'
 let scene = null
 export default {
   name: 'serverFarmsDemo',
   data() {
     return {
+      offsetTop: 0,
+      offsetLeft: 0,
       mesh: null,
       camera: null,
       renderer: null,
@@ -156,7 +160,6 @@ export default {
       return curTexture
     },
     selectCabinet(x, y) {
-      console.log('this', this)
       const { cabinets, renderer, camera, maps, curCabinet } = this
       const { width, height } = renderer.domElement
       //射线投射器，可基于鼠标点和相机，在世界坐标系内建立一条射线，用于选中模型
@@ -206,16 +209,18 @@ export default {
     },
     // 鼠标移动事件
     mouseMove({ clientX, clientY }) {
-      this.selectCabinet(clientX, clientY)
+      // console.log('clientX, clientY', clientX, clientY)
+      this.selectCabinet(clientX - this.offsetLeft, clientY - this.offsetTop)
     },
     //鼠标划入机柜事件，参数为机柜对象
     onMouseOverCabinet(cabinet) {
       console.log('onMouseOverCabinet:', cabinet)
+      this.mockCurrentCabinetStatus(cabinet.name)
       this.state.planeDisplay = 'block'
     },
     //鼠标在机柜上移动的事件，参数为鼠标在canvas画布上的坐标位
     onMouseMoveCabinet(x, y) {
-      console.log('onMouseMoveCabinet', x, y)
+      // console.log('onMouseMoveCabinet', x, y)
       this.state.planePos.left = x + 'px'
       this.state.planePos.top = y + 'px'
     },
@@ -223,9 +228,18 @@ export default {
     onMouseOutCabinet() {
       this.state.planeDisplay = 'none'
     },
+    mockCurrentCabinetStatus(cabinetName) {
+      this.state.curCabinet.name = cabinetName
+      this.state.curCabinet.temperature = randInt(30, 45)
+      this.state.curCabinet.capacity = randInt(40, 48)
+      this.state.curCabinet.count = randInt(1, 40)
+      console.log('cabinetName', cabinetName)
+    },
   },
 
   mounted() {
+    this.offsetTop = this.$refs.container.offsetTop
+    this.offsetLeft = this.$refs.container.offsetLeft
     this.maps = new Map()
     this.crtTexture('cabinet-hover.jpg')
     this.init()
